@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Travel Xplorer</title>
+<meta name="description" content="Travel Xplorer: explore destinations, plan trips, build itineraries and track your budget.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AD%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#eef3f6; --surface:#ffffff; --surface-2:#e3ecf1; --text:#14232f; --muted:#587080;
+  --primary:#0b6e78; --on-primary:#ffffff; --tint:#d3ecee; --accent:#f0a500;
+  --outline:#cfdbe2; --error:#c0392b; --shadow:0 6px 20px rgba(20,35,47,.09);
+  --head:Georgia,'Times New Roman',serif;
+  --body:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+:root.dark{
+  --bg:#0e161c; --surface:#17232c; --surface-2:#1f2f3a; --text:#e8f0f4; --muted:#93a8b5;
+  --primary:#4fc3cf; --on-primary:#06232a; --tint:#1b3a42; --accent:#ffbf3c;
+  --outline:#2c3f4b; --error:#ff7b6b; --shadow:0 6px 20px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--head);margin:0;line-height:1.2}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* ---------- shell / responsive navigation ---------- */
+#shell{display:flex;min-height:100vh}
+#nav{position:sticky;top:0;height:100vh;width:88px;flex:none;background:var(--surface);border-right:1px solid var(--outline);
+  display:flex;flex-direction:column;align-items:stretch;padding:16px 8px;gap:6px;z-index:20}
+.brand{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 0 16px;font-family:var(--head);font-weight:700;font-size:1.15rem}
+.brand .logo{font-size:1.7rem}
+.brand span.t{display:none}
+.nav-item{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border:0;background:none;
+  border-radius:14px;color:var(--muted);font-size:.78rem;text-decoration:none;transition:background .2s,color .2s}
+.nav-item .ic{font-size:1.35rem;line-height:1.2}
+.nav-item:hover{background:var(--surface-2)}
+.nav-item.active{background:var(--tint);color:var(--primary);font-weight:600}
+.badge{position:absolute;top:4px;right:22%;min-width:18px;height:18px;border-radius:9px;background:var(--accent);color:#1b1300;
+  font-size:.7rem;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 5px}
+.badge.show{display:flex}
+#main{flex:1;min-width:0}
+.wrap{max-width:1200px;margin:0 auto;padding:28px 20px 110px;animation:fade .35s ease both}
+.noanim,.noanim *{animation:none!important}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+@media (min-width:1100px){
+  #nav{width:230px;padding:20px 14px}
+  .brand{justify-content:flex-start;padding-left:10px}
+  .brand span.t{display:inline}
+  .nav-item{flex-direction:row;gap:14px;padding:12px 14px;font-size:.98rem}
+  .badge{position:static;margin-left:auto}
+}
+@media (max-width:699px){
+  #shell{flex-direction:column}
+  #nav{position:fixed;bottom:0;left:0;right:0;top:auto;height:66px;width:100%;flex-direction:row;border-right:0;border-top:1px solid var(--outline);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  .brand{display:none}
+  .nav-item{flex:1;padding:6px 2px}
+  .wrap{padding:20px 14px 110px}
+}
+
+/* ---------- common ---------- */
+.muted{color:var(--muted)}
+.page-title{font-size:clamp(1.8rem,4vw,2.6rem);letter-spacing:-.01em}
+.sub{color:var(--muted);margin:4px 0 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:14px;padding:13px 22px;background:var(--primary);color:var(--on-primary);
+  font-weight:600;transition:transform .15s,filter .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:scale(.97)}
+.btn.block{width:100%}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--outline)}
+.btn.danger{background:var(--error);color:#fff}
+.icon-btn{border:0;background:none;border-radius:50%;width:38px;height:38px;font-size:1.05rem;color:var(--muted);transition:background .2s}
+.icon-btn:hover{background:var(--surface-2)}
+.card{background:var(--surface);border:1px solid var(--outline);border-radius:20px;box-shadow:var(--shadow)}
+.pad{padding:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px;margin-top:18px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:thin}
+.chip{flex:none;display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:30px;border:1px solid var(--outline);background:var(--surface);
+  transition:background .25s,color .25s,border-color .25s;font-weight:500}
+.chip.on{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:var(--surface);border:1px solid var(--outline);font-size:.9rem}
+.row{display:flex;align-items:center;gap:12px}
+.between{justify-content:space-between}
+.wrapflex{display:flex;flex-wrap:wrap;gap:10px}
+.empty{text-align:center;padding:60px 20px}
+.empty .big{font-size:3.4rem}
+.empty h3{margin:10px 0 6px}
+.bar{height:10px;border-radius:6px;background:var(--surface-2);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--primary);border-radius:6px;transition:width .7s cubic-bezier(.2,.8,.2,1),background .3s}
+.bar.over>i{background:var(--error)}
+.over{color:var(--error)}
+.backbar{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+
+/* ---------- destination card ---------- */
+.dcard{position:relative;height:210px;border-radius:22px;overflow:hidden;color:#fff;cursor:pointer;box-shadow:var(--shadow);
+  transition:transform .25s,box-shadow .25s}
+.dcard:hover{transform:translateY(-4px);box-shadow:0 14px 28px rgba(0,0,0,.2)}
+.dcard .em{position:absolute;right:-6px;top:-4px;font-size:7.5rem;opacity:.25;transform:rotate(-8deg);pointer-events:none}
+.dcard .shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 42%,rgba(0,0,0,.6))}
+.dcard .rating{position:absolute;left:12px;top:12px;background:rgba(0,0,0,.38);padding:4px 10px;border-radius:20px;font-size:.82rem;font-weight:600}
+.heart{position:absolute;right:8px;top:8px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.25);color:#fff;font-size:1.3rem;
+  transition:transform .2s,background .2s}
+.heart:hover{background:rgba(0,0,0,.4)}
+.heart.on{color:#ff6b6b}
+.heart.pop{animation:pop .35s ease}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.35)}100%{transform:scale(1)}}
+.dcard .info{position:absolute;left:16px;right:16px;bottom:14px}
+.dcard h3{font-size:1.5rem}
+.dcard .info div{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;opacity:.95}
+
+/* ---------- forms ---------- */
+.field{margin-bottom:16px}
+.field label{display:block;font-weight:600;font-size:.9rem;margin-bottom:6px}
+.field input,.field select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid var(--outline);background:var(--surface);transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--tint)}
+.field.invalid input,.field.invalid select{border-color:var(--error)}
+.err{color:var(--error);font-size:.84rem;min-height:1.1em;margin-top:4px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:560px){.two{grid-template-columns:1fr}}
+.switch{display:flex;align-items:center;gap:12px;margin:6px 0 18px}
+.switch input{width:20px;height:20px;accent-color:var(--primary)}
+.formwrap{max-width:700px;margin:0 auto}
+.sugg{display:flex;align-items:center;gap:10px;margin:-6px 0 14px;font-size:.92rem;color:var(--muted)}
+.sugg button{border:0;background:none;color:var(--primary);font-weight:700;padding:4px}
+.seg{display:flex;border:1px solid var(--outline);border-radius:14px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--surface);padding:12px;transition:background .2s,color .2s}
+.seg button+button{border-left:1px solid var(--outline)}
+.seg button.on{background:var(--primary);color:var(--on-primary);font-weight:600}
+
+/* ---------- detail pages ---------- */
+.hero{position:relative;border-radius:26px;overflow:hidden;color:#fff;padding:60px 26px 26px;min-height:240px;display:flex;flex-direction:column;justify-content:flex-end}
+.hero .em{position:absolute;right:10px;top:-10px;font-size:11rem;opacity:.25;line-height:1}
+.hero h1{font-size:clamp(2rem,6vw,3.2rem);position:relative}
+.hero p{margin:4px 0 0;position:relative;opacity:.92}
+.hero .hbtn{position:absolute;top:14px;right:14px;z-index:2}
+.hero .hback{position:absolute;top:14px;left:14px;z-index:2;background:rgba(0,0,0,.28);color:#fff}
+.hero .hbtn,.hero .hback{background:rgba(0,0,0,.28);color:#fff;font-size:1.2rem}
+.section{margin-top:28px}
+.section h2{font-size:1.4rem;margin-bottom:12px}
+.est input[type=range]{width:100%;accent-color:var(--primary)}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:40px;height:40px;border-radius:50%;border:0;background:var(--tint);color:var(--primary);font-size:1.3rem;font-weight:700}
+.total{font-family:var(--head);font-size:2rem;color:var(--primary);font-weight:700}
+.stats{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0 0}
+.stat{display:flex;align-items:center;gap:12px;padding:12px 16px}
+.stat .si{width:42px;height:42px;border-radius:50%;background:var(--tint);display:grid;place-items:center;font-size:1.2rem}
+.stat b{display:block;font-size:1.05rem}
+.stat small{color:var(--muted)}
+
+.tcard{display:flex;overflow:hidden;cursor:pointer;transition:transform .2s}
+.tcard:hover{transform:translateY(-3px)}
+.tside{width:88px;flex:none;display:grid;place-items:center;font-size:2.4rem}
+.tbody{flex:1;min-width:0;padding:14px 10px 14px 16px;display:flex;flex-direction:column;gap:8px}
+.tbody h3{font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbody p{margin:0;font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.small{font-size:.82rem}
+
+.day{margin-bottom:14px;overflow:hidden}
+.day header{background:var(--tint);color:var(--primary);padding:10px 16px;font-weight:700}
+.act{display:flex;align-items:center;gap:12px;padding:10px 12px;border-top:1px solid var(--outline)}
+.act input{width:20px;height:20px;accent-color:var(--primary);flex:none}
+.act .at{flex:1;min-width:0}
+.act .at b{display:block;transition:color .2s}
+.act.done .at b{text-decoration:line-through;color:var(--muted)}
+.act .cost{font-weight:600;white-space:nowrap}
+.none{padding:14px 16px;color:var(--muted)}
+
+/* ---------- dialogs / toast / splash ---------- */
+dialog{border:0;border-radius:22px;padding:24px;background:var(--surface);color:var(--text);width:min(440px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog[open]{animation:fade .25s ease}
+dialog h3{margin-bottom:14px}
+.dactions{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
+#toast{position:fixed;left:50%;bottom:90px;transform:translate(-50%,20px);background:var(--text);color:var(--bg);padding:12px 20px;border-radius:30px;opacity:0;pointer-events:none;
+  transition:opacity .25s,transform .25s;z-index:100;font-weight:500}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;
+  background:linear-gradient(135deg,#0b6e78,#173f5f);transition:opacity .6s,visibility .6s}
+#splash.hide{opacity:0;visibility:hidden}
+#splash .globe{font-size:5.5rem;animation:bounce 1.4s cubic-bezier(.3,1.6,.5,1) both}
+#splash h1{font-size:clamp(2.2rem,8vw,3.4rem);animation:rise .9s .3s ease both}
+#splash p{margin:0;opacity:.85;animation:rise .9s .55s ease both}
+@keyframes bounce{from{transform:scale(.3) rotate(-30deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes rise{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="splash" aria-hidden="true">
+  <div class="globe">🧭</div>
+  <h1>Travel Xplorer</h1>
+  <p>Plan less. Travel more.</p>
+</div>
+
+<div id="shell">
+  <nav id="nav" aria-label="Main"></nav>
+  <main id="main"></main>
+</div>
+
+<dialog id="actDlg"></dialog>
+<dialog id="confirmDlg">
+  <h3 id="confirmTitle">Are you sure?</h3>
+  <p id="confirmMsg" class="muted"></p>
+  <div class="dactions">
+    <button class="btn ghost" data-action="confirm-no">Cancel</button>
+    <button class="btn danger" data-action="confirm-yes">Delete</button>
+  </div>
+</dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* =====================================================================
+   Travel Xplorer - single-file travel planner (HTML + CSS + JavaScript)
+   Features: responsive layout, hash routing (multiple screens), animations,
+   shared app state saved in localStorage, themes, and validated forms.
+   ===================================================================== */
+'use strict';
+
+/* ---------- helpers ---------- */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => new Intl.NumberFormat('en-IN', {style:'currency', currency:'INR', maximumFractionDigits:0}).format(n || 0);
+const iso = d => d.toISOString().slice(0, 10);
+const parse = s => new Date(s + 'T00:00:00Z');
+const addDays = (s, n) => { const d = parse(s); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+const diffDays = (a, b) => Math.round((parse(b) - parse(a)) / 864e5);
+const fmtDate  = s => parse(s).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric', timeZone:'UTC'});
+const fmtShort = s => parse(s).toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', timeZone:'UTC'});
+const todayISO = () => { const d = new Date(); return iso(new Date(d.getTime() - d.getTimezoneOffset() * 60000)); };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+/* ---------- data ---------- */
+const CATS = [['All','🧭'], ['Beach','🏖️'], ['Mountain','⛰️'], ['City','🏙️'], ['Heritage','🏛️'], ['Nature','🌿']];
+const DESTS = [
+  {id:'goa', name:'Goa', country:'India', cat:'Beach', rating:4.6, price:3500, best:'Nov - Feb', em:'🏖️', c:['#00b4db','#0083b0'],
+   desc:'Sun, sand and Portuguese-era charm. Goa mixes lively beach shacks, quiet southern coves, spice plantations and old churches.',
+   hl:['Baga Beach','Fort Aguada','Basilica of Bom Jesus','Dudhsagar Falls','Palolem Beach']},
+  {id:'jaipur', name:'Jaipur', country:'India', cat:'Heritage', rating:4.5, price:3000, best:'Oct - Mar', em:'🏰', c:['#f2709c','#ff9472'],
+   desc:'The Pink City is famous for majestic forts, palaces and bustling bazaars full of textiles, jewellery and handicrafts.',
+   hl:['Amber Fort','Hawa Mahal','City Palace','Jantar Mantar','Johari Bazaar']},
+  {id:'munnar', name:'Munnar', country:'India', cat:'Nature', rating:4.7, price:2800, best:'Sep - May', em:'🍃', c:['#11998e','#38b96d'],
+   desc:'Rolling tea estates, misty hills and waterfalls in the Western Ghats of Kerala. Perfect for slow, scenic travel.',
+   hl:['Tea Museum','Eravikulam National Park','Mattupetty Dam','Top Station']},
+  {id:'manali', name:'Manali', country:'India', cat:'Mountain', rating:4.4, price:3200, best:'Mar - Jun', em:'🏔️', c:['#536976','#292e49'],
+   desc:'A Himalayan hill station with snow-capped views, adventure sports, cafes and the gateway to Solang Valley and Rohtang Pass.',
+   hl:['Solang Valley','Hadimba Temple','Rohtang Pass','Old Manali','Jogini Falls']},
+  {id:'bali', name:'Bali', country:'Indonesia', cat:'Beach', rating:4.8, price:6500, best:'Apr - Oct', em:'🌴', c:['#ff8008','#ffc837'],
+   desc:'The Island of Gods blends surf beaches, rice terraces, temples and a vibrant wellness and cafe culture.',
+   hl:['Uluwatu Temple','Tegallalang Rice Terraces','Ubud Monkey Forest','Seminyak Beach']},
+  {id:'paris', name:'Paris', country:'France', cat:'City', rating:4.7, price:14000, best:'Apr - Jun', em:'🗼', c:['#8e2de2','#4a00e0'],
+   desc:'The city of light: world-class museums, cafe terraces, riverside walks and the iconic Eiffel Tower.',
+   hl:['Eiffel Tower','Louvre Museum','Montmartre','Seine River Cruise','Notre-Dame']},
+  {id:'tokyo', name:'Tokyo', country:'Japan', cat:'City', rating:4.9, price:12000, best:'Mar - May', em:'⛩️', c:['#eb3349','#f45c43'],
+   desc:'A neon-lit metropolis where ancient shrines sit beside futuristic skyscrapers, with some of the best food on earth.',
+   hl:['Senso-ji Temple','Shibuya Crossing','Meiji Shrine','Tsukiji Outer Market']},
+  {id:'santorini', name:'Santorini', country:'Greece', cat:'Beach', rating:4.8, price:13000, best:'May - Sep', em:'🌅', c:['#2193b0','#6dd5ed'],
+   desc:"Whitewashed villages perched on volcanic cliffs, deep blue domes and some of the world's best sunsets.",
+   hl:['Oia Sunset','Red Beach','Fira Town','Akrotiri Ruins']},
+  {id:'rome', name:'Rome', country:'Italy', cat:'Heritage', rating:4.6, price:11000, best:'Apr - Jun', em:'🏛️', c:['#b79891','#94716b'],
+   desc:'Walk through 3,000 years of history: the Colosseum, Roman Forum, Vatican City and countless piazzas.',
+   hl:['Colosseum','Vatican Museums','Trevi Fountain','Roman Forum']},
+  {id:'swiss', name:'Swiss Alps', country:'Switzerland', cat:'Mountain', rating:4.9, price:18000, best:'Jun - Sep', em:'⛷️', c:['#2c3e50','#4ca1af'],
+   desc:'Cog railways, glaciers, alpine lakes and postcard villages. Ideal for hiking in summer and skiing in winter.',
+   hl:['Jungfraujoch','Interlaken','Lake Lucerne','Zermatt']}
+];
+const dest = id => DESTS.find(d => d.id === id);
+const grad = d => `linear-gradient(135deg, ${d.c[0]}, ${d.c[1]})`;
+
+/* ---------- state (saved in localStorage) ---------- */
+const KEY = 'travel-xplorer-v1';
+function seed() {
+  const start = addDays(todayISO(), 20);
+  return {
+    name: 'Traveller', theme: 'system', favs: ['bali', 'tokyo'],
+    trips: [{
+      id: uid(), title: 'Goa with friends', dest: 'goa', start, end: addDays(start, 3), budget: 40000, travellers: 4,
+      acts: [
+        {id: uid(), title: 'Check in to beach hostel', date: start, time: '12:00', cost: 6000, done: false},
+        {id: uid(), title: 'Sunset at Baga Beach', date: start, time: '17:30', cost: 0, done: false},
+        {id: uid(), title: 'Scooter ride to Fort Aguada', date: addDays(start, 1), time: '10:00', cost: 1500, done: false},
+        {id: uid(), title: 'Dinner at a beach shack', date: addDays(start, 1), time: '20:00', cost: 3200, done: false}
+      ]
+    }]
+  };
+}
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+if (!S || !Array.isArray(S.trips)) S = seed();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+const UI = {query: '', cat: 'All', estDays: 5, estPeople: 2, noanim: false};
+
+/* trip helpers */
+const tripDays  = t => diffDays(t.start, t.end) + 1;
+const spent     = t => t.acts.reduce((s, a) => s + (a.cost || 0), 0);
+const doneCount = t => t.acts.filter(a => a.done).length;
+const tripById  = id => S.trips.find(t => t.id === id);
+
+/* ---------- theme ---------- */
+const mq = window.matchMedia('(prefers-color-scheme: dark)');
+function applyTheme() {
+  const dark = S.theme === 'dark' || (S.theme === 'system' && mq.matches);
+  document.documentElement.classList.toggle('dark', dark);
+}
+mq.addEventListener && mq.addEventListener('change', applyTheme);
+applyTheme();
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ---------- confirm dialog (promise based) ---------- */
+let confirmResolve;
+function askConfirm(title, msg, yesLabel = 'Delete') {
+  $('#confirmTitle').textContent = title;
+  $('#confirmMsg').textContent = msg;
+  $('[data-action="confirm-yes"]').textContent = yesLabel;
+  $('#confirmDlg').showModal();
+  return new Promise(res => { confirmResolve = res; });
+}
+function closeConfirm(v) { $('#confirmDlg').close(); if (confirmResolve) confirmResolve(v); confirmResolve = null; }
+$('#confirmDlg').addEventListener('cancel', () => { if (confirmResolve) confirmResolve(false); confirmResolve = null; });
+
+/* ---------- navigation ---------- */
+const NAV = [['', '🧭', 'Explore'], ['trips', '🧳', 'My Trips'], ['favs', '♥', 'Favourites'], ['settings', '⚙️', 'Settings']];
+
+function renderNav(active) {
+  $('#nav').innerHTML =
+    `<div class="brand"><span class="logo">🧭</span><span class="t">Travel Xplorer</span></div>` +
+    NAV.map(([key, ic, label]) =>
+      `<a class="nav-item ${key === active ? 'active' : ''}" href="#/${key}" ${key === active ? 'aria-current="page"' : ''}>
+         <span class="ic">${ic}</span><span>${label}</span>
+         ${key === 'favs' ? `<span class="badge ${S.favs.length ? 'show' : ''}" id="favBadge">${S.favs.length}</span>` : ''}
+       </a>`).join('');
+}
+
+function currentRoute() {
+  const raw = location.hash.replace(/^#\/?/, '');
+  const [path, query] = raw.split('?');
+  const parts = path.split('/').filter(Boolean);
+  const params = new URLSearchParams(query || '');
+  return {parts, params};
+}
+
+function go(href) { location.hash = href; }
+
+/* ---------- views ---------- */
+function destCard(d) {
+  const fav = S.favs.includes(d.id);
+  return `<article class="dcard" style="background:${grad(d)}" data-action="go" data-href="#/destination/${d.id}" tabindex="0" role="link" aria-label="${esc(d.name)}, ${esc(d.country)}">
+    <div class="em">${d.em}</div><div class="shade"></div>
+    <span class="rating">★ ${d.rating}</span>
+    <button class="heart ${fav ? 'on' : ''}" data-action="fav" data-id="${d.id}" aria-label="${fav ? 'Remove from' : 'Add to'} favourites" aria-pressed="${fav}">${fav ? '♥' : '♡'}</button>
+    <div class="info"><h3>${esc(d.name)}</h3><div><span>📍 ${esc(d.country)}</span><b>${money(d.price)}/day</b></div></div>
+  </article>`;
+}
+
+function filtered() {
+  const q = UI.query.trim().toLowerCase();
+  return DESTS.filter(d => (UI.cat === 'All' || d.cat === UI.cat) &&
+    (!q || d.name.toLowerCase().includes(q) || d.country.toLowerCase().includes(q)));
+}
+function gridHTML(list) {
+  return list.length
+    ? list.map(destCard).join('')
+    : `<div class="empty" style="grid-column:1/-1"><div class="big">🔎</div><h3>No destinations found</h3><p class="muted">Try another search term or pick a different category.</p></div>`;
+}
+
+function viewExplore() {
+  return `<section class="wrap">
+    <p class="muted" style="margin:0">Hello, ${esc(S.name)} 👋</p>
+    <h1 class="page-title">Where to next?</h1>
+    <div class="field" style="margin:18px 0 8px">
+      <input id="q" type="search" placeholder="Search by place or country, e.g. Bali" value="${esc(UI.query)}" aria-label="Search destinations" autocomplete="off">
+    </div>
+    <div class="chips" id="chips">${chipsHTML()}</div>
+    <div class="grid" id="grid">${gridHTML(filtered())}</div>
+    <div style="position:fixed;right:22px;bottom:92px;z-index:15">
+      <button class="btn" data-action="go" data-href="#/trip/new" style="box-shadow:var(--shadow);padding:15px 22px">＋ Plan a trip</button>
+    </div>
+  </section>`;
+}
+const chipsHTML = () => CATS.map(([c, ic]) =>
+  `<button class="chip ${UI.cat === c ? 'on' : ''}" data-action="cat" data-cat="${c}">${ic} ${c}</button>`).join('');
+
+function viewFavs() {
+  const list = DESTS.filter(d => S.favs.includes(d.id));
+  return `<section class="wrap">
+    <h1 class="page-title">Favourites</h1>
+    <p class="sub">Places you want to visit someday</p>
+    ${list.length
+      ? `<div class="grid">${list.map(destCard).join('')}</div>`
+      : `<div class="empty"><div class="big">♡</div><h3>No favourites yet</h3><p class="muted">Tap the heart on any destination to save it here.</p>
+         <button class="btn" data-action="go" data-href="#/">Explore destinations</button></div>`}
+  </section>`;
+}
+
+function viewDestination(id) {
+  const d = dest(id);
+  if (!d) return notFound('Destination not found');
+  const fav = S.favs.includes(d.id);
+  const total = d.price * UI.estDays * UI.estPeople;
+  return `<section class="wrap">
+    <div class="hero" style="background:${grad(d)}">
+      <button class="icon-btn hback" data-action="back" aria-label="Go back">←</button>
+      <button class="icon-btn hbtn heart-inline ${fav ? 'on' : ''}" data-action="fav" data-id="${d.id}" aria-label="Toggle favourite">${fav ? '♥' : '♡'}</button>
+      <div class="em">${d.em}</div>
+      <h1>${esc(d.name)}</h1>
+      <p>${esc(d.country)}, best time ${esc(d.best)}</p>
+    </div>
+    <div class="wrapflex" style="margin-top:16px">
+      <span class="pill">🌍 ${esc(d.country)}</span>
+      <span class="pill">⭐ ${d.rating}</span>
+      <span class="pill">📅 Best: ${esc(d.best)}</span>
+      <span class="pill">💸 ${money(d.price)}/day</span>
+    </div>
+    <p style="font-size:1.08rem;max-width:68ch;margin:18px 0 0">${esc(d.desc)}</p>
+    <div class="section"><h2>Top highlights</h2>
+      <div class="wrapflex">${d.hl.map(h => `<span class="pill">📍 ${esc(h)}</span>`).join('')}</div>
+    </div>
+    <div class="section est"><h2>Cost estimator</h2>
+      <div class="card pad">
+        <div class="row between"><b>Duration</b><span id="estDaysLbl">${UI.estDays} days</span></div>
+        <input id="estDays" type="range" min="1" max="14" value="${UI.estDays}" aria-label="Number of days">
+        <div class="row between" style="margin-top:14px"><b>Travellers</b>
+          <div class="stepper">
+            <button data-action="people" data-d="-1" aria-label="Fewer travellers">−</button>
+            <b id="estPeople" style="min-width:24px;text-align:center">${UI.estPeople}</b>
+            <button data-action="people" data-d="1" aria-label="More travellers">+</button>
+          </div>
+        </div>
+        <hr style="border:0;border-top:1px solid var(--outline);margin:18px 0">
+        <div class="row between"><span class="muted">Estimated total</span><span class="total" id="estTotal">${money(total)}</span></div>
+      </div>
+    </div>
+    <div style="margin-top:24px"><button class="btn block" data-action="go" data-href="#/trip/new?dest=${d.id}">✈️ Plan a trip to ${esc(d.name)}</button></div>
+  </section>`;
+}
+
+function tripCard(t) {
+  const d = dest(t.dest), s = spent(t), over = s > t.budget;
+  const pct = t.acts.length ? Math.round(doneCount(t) / t.acts.length * 100) : 0;
+  return `<article class="card tcard" data-action="go" data-href="#/trip/${t.id}" tabindex="0" role="link" aria-label="${esc(t.title)}">
+    <div class="tside" style="background:${grad(d)}">${d.em}</div>
+    <div class="tbody">
+      <div class="row between"><h3>${esc(t.title)}</h3>
+        <button class="icon-btn" data-action="del-trip" data-id="${t.id}" aria-label="Delete trip">🗑</button></div>
+      <p>${esc(d.name)}, ${fmtDate(t.start)} to ${fmtDate(t.end)}</p>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="row between small"><span>${doneCount(t)}/${t.acts.length} done</span>
+        <b class="${over ? 'over' : ''}" style="color:${over ? '' : 'var(--primary)'}">${money(s)} / ${money(t.budget)}</b></div>
+    </div>
+  </article>`;
+}
+const statHTML = (ic, v, l) => `<div class="card stat"><div class="si">${ic}</div><div><b>${v}</b><small>${l}</small></div></div>`;
+
+function viewTrips() {
+  const total = S.trips.reduce((s, t) => s + t.budget, 0);
+  const countries = new Set(S.trips.map(t => dest(t.dest).country)).size;
+  return `<section class="wrap">
+    <h1 class="page-title">My Trips</h1>
+    <p class="sub">Plan, track and budget your journeys</p>
+    <div class="stats">${statHTML('🧳', S.trips.length, 'Trips planned')}${statHTML('🌍', countries, 'Countries')}${statHTML('💰', money(total), 'Total budget')}</div>
+    ${S.trips.length
+      ? `<div class="grid">${S.trips.map(tripCard).join('')}</div>
+         <div style="position:fixed;right:22px;bottom:92px;z-index:15"><button class="btn" data-action="go" data-href="#/trip/new" style="box-shadow:var(--shadow);padding:15px 22px">＋ New trip</button></div>`
+      : `<div class="empty"><div class="big">🧳</div><h3>No trips yet</h3><p class="muted">Create your first trip and start building an itinerary.</p>
+         <button class="btn" data-action="go" data-href="#/trip/new">Plan a trip</button></div>`}
+  </section>`;
+}
+
+function field(name, label, inner, extra = '') {
+  return `<div class="field" data-field="${name}"><label for="f_${name}">${label}</label>${inner}${extra}<div class="err" aria-live="polite"></div></div>`;
+}
+function viewTripForm(preDest) {
+  const opts = `<option value="">Choose a destination</option>` +
+    DESTS.map(d => `<option value="${d.id}" ${d.id === preDest ? 'selected' : ''}>${esc(d.name)}, ${esc(d.country)}</option>`).join('');
+  const pd = dest(preDest);
+  return `<section class="wrap"><div class="formwrap">
+    <div class="backbar"><button class="icon-btn" data-action="back" aria-label="Go back">←</button><h1 class="page-title" style="font-size:1.9rem">Plan a trip</h1></div>
+    <form id="tripForm" class="card pad" novalidate>
+      ${field('title', 'Trip name', `<input id="f_title" name="title" maxlength="60" placeholder="e.g. Summer holiday" value="${pd ? 'Trip to ' + esc(pd.name) : ''}">`)}
+      ${field('dest', 'Destination', `<select id="f_dest" name="dest">${opts}</select>`)}
+      <div class="two">
+        ${field('start', 'Start date', `<input id="f_start" name="start" type="date" min="${todayISO()}">`)}
+        ${field('end', 'End date', `<input id="f_end" name="end" type="date" min="${todayISO()}">`)}
+      </div>
+      <div class="two">
+        ${field('travellers', 'Travellers', `<input id="f_travellers" name="travellers" type="number" inputmode="numeric" value="1" min="1" max="20">`)}
+        ${field('budget', 'Total budget (₹)', `<input id="f_budget" name="budget" type="number" inputmode="numeric" min="1" placeholder="e.g. 30000">`)}
+      </div>
+      <div class="sugg" id="sugg" hidden></div>
+      <label class="switch"><input type="checkbox" name="suggest" checked> <span>Add suggested activities<br><small class="muted">Pre-fill the itinerary with top highlights</small></span></label>
+      <button class="btn block" type="submit">Create trip</button>
+    </form></div></section>`;
+}
+
+function viewTrip(id) {
+  const t = tripById(id);
+  if (!t) return notFound('Trip not found');
+  const d = dest(t.dest), s = spent(t), over = s > t.budget;
+  const pct = t.budget ? Math.min(100, s / t.budget * 100) : 0;
+  const days = tripDays(t);
+  let dayHTML = '';
+  for (let i = 0; i < days; i++) {
+    const date = addDays(t.start, i);
+    const items = t.acts.filter(a => a.date === date).sort((a, b) => a.time.localeCompare(b.time));
+    dayHTML += `<div class="card day"><header>Day ${i + 1}, ${fmtShort(date)}</header>` +
+      (items.length ? items.map(a => `
+        <div class="act ${a.done ? 'done' : ''}">
+          <input type="checkbox" data-action="toggle-act" data-t="${t.id}" data-a="${a.id}" ${a.done ? 'checked' : ''} aria-label="Mark ${esc(a.title)} as done">
+          <div class="at"><b>${esc(a.title)}</b><small class="muted">${esc(a.time)}</small></div>
+          ${a.cost > 0 ? `<span class="cost">${money(a.cost)}</span>` : ''}
+          <button class="icon-btn" data-action="del-act" data-t="${t.id}" data-a="${a.id}" aria-label="Remove activity">✕</button>
+        </div>`).join('') : `<div class="none">Nothing planned yet</div>`) + `</div>`;
+  }
+  return `<section class="wrap">
+    <div class="hero" style="background:${grad(d)};min-height:210px">
+      <button class="icon-btn hback" data-action="back" aria-label="Go back">←</button>
+      <button class="icon-btn hbtn" data-action="del-trip-detail" data-id="${t.id}" aria-label="Delete trip">🗑</button>
+      <div class="em">${d.em}</div>
+      <h1>${esc(t.title)}</h1>
+      <p>${esc(d.name)}, ${esc(d.country)}: ${fmtDate(t.start)} to ${fmtDate(t.end)} (${days} days)</p>
+    </div>
+    <div class="card pad" style="margin-top:18px">
+      <div class="row between"><h2 style="font-size:1.25rem">Budget</h2>
+        <b class="${over ? 'over' : ''}" style="color:${over ? '' : 'var(--primary)'}">${over ? money(s - t.budget) + ' over' : money(t.budget - s) + ' left'}</b></div>
+      <div class="bar ${over ? 'over' : ''}" style="margin:12px 0 8px"><i data-w="${pct}" style="width:${UI.noanim ? pct : 0}%"></i></div>
+      <small class="muted">${money(s)} spent of ${money(t.budget)}</small>
+    </div>
+    <div class="stats">
+      ${statHTML('👥', t.travellers, 'Travellers')}
+      ${statHTML('🙋', money(t.travellers ? s / t.travellers : 0), 'Spent per person')}
+      ${statHTML('✅', doneCount(t) + '/' + t.acts.length, 'Activities done')}
+    </div>
+    <div class="section"><div class="row between" style="margin-bottom:12px"><h2 style="margin:0">Itinerary</h2>
+      <button class="btn" data-action="open-act" data-id="${t.id}">＋ Add activity</button></div>
+      ${dayHTML}
+    </div>
+  </section>`;
+}
+
+function viewSettings() {
+  return `<section class="wrap"><div class="formwrap">
+    <h1 class="page-title">Settings</h1><p class="sub">Personalise Travel Xplorer</p>
+    <form id="nameForm" class="card pad" style="margin-top:20px" novalidate>
+      <h2 style="font-size:1.2rem;margin-bottom:12px">Profile</h2>
+      ${field('name', 'Display name', `<input id="f_name" name="name" value="${esc(S.name)}" maxlength="30" autocomplete="nickname">`)}
+      <button class="btn" type="submit">Save name</button>
+    </form>
+    <div class="card pad" style="margin-top:16px">
+      <h2 style="font-size:1.2rem;margin-bottom:12px">Appearance</h2>
+      <div class="seg" role="group" aria-label="Theme">
+        ${[['system', 'System'], ['light', 'Light'], ['dark', 'Dark']].map(([v, l]) =>
+          `<button class="${S.theme === v ? 'on' : ''}" data-action="theme" data-v="${v}" aria-pressed="${S.theme === v}">${l}</button>`).join('')}
+      </div>
+    </div>
+    <div class="card pad" style="margin-top:16px;display:flex;gap:12px;align-items:center">
+      <span style="font-size:1.6rem">ℹ️</span><div><b>Travel Xplorer 1.0.0</b><br><small class="muted">Your trips are saved in this browser only.</small></div>
+    </div>
+    <div style="margin-top:16px"><button class="btn ghost" data-action="reset">Reset all data</button></div>
+  </div></section>`;
+}
+
+function notFound(msg) {
+  return `<section class="wrap"><div class="empty"><div class="big">🧭</div><h3>${esc(msg)}</h3>
+    <p class="muted">It may have been deleted or the link is wrong.</p>
+    <button class="btn" data-action="go" data-href="#/">Back to Explore</button></div></section>`;
+}
+
+/* ---------- render ---------- */
+function render() {
+  const {parts, params} = currentRoute();
+  const [a, b] = parts;
+  let html, active = '';
+  if (!a) { html = viewExplore(); active = ''; }
+  else if (a === 'favs') { html = viewFavs(); active = 'favs'; }
+  else if (a === 'settings') { html = viewSettings(); active = 'settings'; }
+  else if (a === 'trips') { html = viewTrips(); active = 'trips'; }
+  else if (a === 'destination') { html = viewDestination(b); active = ''; }
+  else if (a === 'trip' && b === 'new') { html = viewTripForm(params.get('dest')); active = 'trips'; }
+  else if (a === 'trip') { html = viewTrip(b); active = 'trips'; }
+  else { html = notFound('Page not found'); }
+
+  renderNav(active);
+  $('#main').innerHTML = html;
+  if (UI.noanim) $('#main .wrap')?.classList.add('noanim');
+  // animate budget bar
+  $$('[data-w]').forEach(el => requestAnimationFrame(() => requestAnimationFrame(() => { el.style.width = el.dataset.w + '%'; })));
+  if (!UI.keepScroll) window.scrollTo(0, 0);
+  UI.noanim = false; UI.keepScroll = false;
+  if (a === 'trip' && b === 'new') { updateSuggestion(); }
+  document.title = 'Travel Xplorer';
+}
+window.addEventListener('hashchange', render);
+
+/* re-render without entrance animation / scroll jump (used by in-page actions) */
+function rerender() { UI.noanim = true; UI.keepScroll = true; render(); }
+
+/* ---------- favourites ---------- */
+function toggleFav(id) {
+  const i = S.favs.indexOf(id);
+  const added = i < 0;
+  if (added) S.favs.push(id); else S.favs.splice(i, 1);
+  save();
+  const route = currentRoute().parts[0];
+  if (route === 'favs') { rerender(); toast('Removed from favourites'); return; }
+  $$(`[data-action="fav"][data-id="${id}"]`).forEach(b => {
+    b.classList.toggle('on', added);
+    b.textContent = added ? '♥' : '♡';
+    b.setAttribute('aria-pressed', added);
+    b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+  });
+  const badge = $('#favBadge');
+  if (badge) { badge.textContent = S.favs.length; badge.classList.toggle('show', S.favs.length > 0); }
+  toast(added ? 'Saved to favourites' : 'Removed from favourites');
+}
+
+/* ---------- validation ---------- */
+function showErrors(form, errs, only) {
+  $$('[data-field]', form).forEach(w => {
+    const f = w.dataset.field;
+    const msg = (!only || only.has(f)) ? errs[f] : '';
+    w.classList.toggle('invalid', !!msg);
+    $('.err', w).textContent = msg || '';
+  });
+}
+function tripErrors(f) {
+  const e = {}, t = (f.title.value || '').trim();
+  if (!t) e.title = 'Trip name is required.';
+  else if (t.length < 3) e.title = 'Use at least 3 characters.';
+  else if (t.length > 40) e.title = 'Use 40 characters or fewer.';
+  if (!f.dest.value) e.dest = 'Choose a destination.';
+  if (!f.start.value) e.start = 'Select a start date.';
+  else if (f.start.value < todayISO()) e.start = 'Start date cannot be in the past.';
+  if (!f.end.value) e.end = 'Select an end date.';
+  else if (f.start.value && f.end.value < f.start.value) e.end = 'End date must be on or after the start date.';
+  else if (f.start.value && diffDays(f.start.value, f.end.value) + 1 > 30) e.end = 'Trips can be at most 30 days.';
+  const n = Number(f.travellers.value);
+  if (!f.travellers.value || !Number.isInteger(n)) e.travellers = 'Enter a whole number.';
+  else if (n < 1 || n > 20) e.travellers = 'Enter between 1 and 20 travellers.';
+  const b = Number(f.budget.value);
+  if (!f.budget.value) e.budget = 'Enter your total budget.';
+  else if (!(b > 0)) e.budget = 'Budget must be greater than 0.';
+  else if (b > 100000000) e.budget = 'That budget looks too high.';
+  return e;
+}
+function actErrors(f, trip) {
+  const e = {}, t = (f.title.value || '').trim();
+  if (!t) e.title = 'Enter an activity name.';
+  else if (t.length < 3) e.title = 'Use at least 3 characters.';
+  if (!f.time.value) e.time = 'Pick a time.';
+  if (f.cost.value !== '' && !(Number(f.cost.value) >= 0)) e.cost = 'Enter a valid amount.';
+  return e;
+}
+function nameErrors(f) {
+  const e = {}, t = (f.name.value || '').trim();
+  if (!t) e.name = 'Please enter your name.';
+  else if (t.length < 2) e.name = 'Name must be at least 2 characters.';
+  else if (t.length > 20) e.name = 'Keep it under 20 characters.';
+  return e;
+}
+const VALIDATORS = {tripForm: tripErrors, nameForm: nameErrors, actForm: actErrors};
+
+function updateSuggestion() {
+  const f = $('#tripForm'); if (!f) return;
+  const box = $('#sugg');
+  const d = dest(f.dest.value), n = Number(f.travellers.value);
+  if (d && f.start.value && f.end.value && f.end.value >= f.start.value && n >= 1) {
+    const sug = d.price * (diffDays(f.start.value, f.end.value) + 1) * n;
+    box.hidden = false;
+    box.innerHTML = `<span>💡 Suggested budget: <b>${money(sug)}</b></span><button type="button" data-action="use-sugg" data-v="${sug}">Use this</button>`;
+  } else box.hidden = true;
+}
+
+/* live validation: validate fields the user has touched (or all after a submit attempt) */
+function liveValidate(e) {
+  const form = e.target.closest('form'); if (!form || !VALIDATORS[form.id]) return;
+  form._touched = form._touched || new Set();
+  if (e.target.name) form._touched.add(e.target.name);
+  if (form.id === 'tripForm' && e.target.name === 'start') {
+    form.end.min = form.start.value || todayISO();
+    if (form._touched.has('end')) form._touched.add('end');
+  }
+  const errs = VALIDATORS[form.id](form, form._trip);
+  showErrors(form, errs, form._submitted ? null : form._touched);
+  if (form.id === 'tripForm') updateSuggestion();
+}
+document.addEventListener('input', liveValidate);
+document.addEventListener('change', liveValidate);
+document.addEventListener('focusout', liveValidate);
+
+/* ---------- form submissions ---------- */
+document.addEventListener('submit', e => {
+  const form = e.target;
+  if (!VALIDATORS[form.id]) return;
+  e.preventDefault();
+  form._submitted = true;
+  const errs = VALIDATORS[form.id](form, form._trip);
+  showErrors(form, errs, null);
+  const first = Object.keys(errs)[0];
+  if (first) { form.elements[first]?.focus(); toast('Please fix the highlighted fields'); return; }
+
+  if (form.id === 'tripForm') {
+    const d = dest(form.dest.value);
+    const trip = {id: uid(), title: form.title.value.trim(), dest: d.id, start: form.start.value, end: form.end.value,
+      budget: Number(form.budget.value), travellers: Number(form.travellers.value), acts: []};
+    if (form.suggest.checked) {
+      const days = tripDays(trip);
+      d.hl.forEach((h, i) => trip.acts.push({id: uid(), title: 'Visit ' + h, date: addDays(trip.start, i % days), time: '10:00', cost: 0, done: false}));
+    }
+    S.trips.unshift(trip); save();
+    toast('Trip created!');
+    history.replaceState(null, '', '#/trips');
+    go('#/trip/' + trip.id);
+  } else if (form.id === 'nameForm') {
+    S.name = form.name.value.trim(); save();
+    toast('Name saved');
+    form.name.blur();
+  } else if (form.id === 'actForm') {
+    const t = tripById(form._trip.id);
+    t.acts.push({id: uid(), title: form.title.value.trim(), date: form.day.value, time: form.time.value,
+      cost: Number(form.cost.value) || 0, done: false});
+    save();
+    $('#actDlg').close();
+    rerender();
+    toast('Activity added');
+  }
+});
+
+/* ---------- add activity dialog ---------- */
+function openActivityDialog(tripId) {
+  const t = tripById(tripId); if (!t) return;
+  const days = tripDays(t);
+  let opts = '';
+  for (let i = 0; i < days; i++) { const d = addDays(t.start, i); opts += `<option value="${d}">Day ${i + 1}, ${fmtShort(d)}</option>`; }
+  const dlg = $('#actDlg');
+  dlg.innerHTML = `<h3>Add activity</h3>
+    <form id="actForm" novalidate>
+      ${field('title', 'Activity', `<input id="f_title" name="title" maxlength="60" placeholder="e.g. Visit the fort" autocomplete="off">`)}
+      ${field('day', 'Day', `<select id="f_day" name="day">${opts}</select>`)}
+      <div class="two">
+        ${field('time', 'Time', `<input id="f_time" name="time" type="time">`)}
+        ${field('cost', 'Cost (₹), optional', `<input id="f_cost" name="cost" type="number" min="0" inputmode="numeric" placeholder="0">`)}
+      </div>
+      <div class="dactions"><button type="button" class="btn ghost" data-action="close-act">Cancel</button><button class="btn" type="submit">Add activity</button></div>
+    </form>`;
+  $('#actForm', dlg)._trip = t;
+  dlg.showModal();
+  $('#f_title', dlg).focus();
+}
+
+/* ---------- click handling (event delegation) ---------- */
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-action]'); if (!el) return;
+  const act = el.dataset.action, d = el.dataset;
+  switch (act) {
+    case 'go': go(d.href); break;
+    case 'back': (history.length > 1 && document.referrer !== '') || history.length > 2 ? history.back() : go('#/'); break;
+    case 'fav': e.stopPropagation(); toggleFav(d.id); break;
+    case 'cat': UI.cat = d.cat; $('#chips').innerHTML = chipsHTML(); $('#grid').innerHTML = gridHTML(filtered()); break;
+    case 'people': UI.estPeople = Math.min(10, Math.max(1, UI.estPeople + Number(d.d))); updateEstimator(); break;
+    case 'theme': S.theme = d.v; save(); applyTheme(); rerender(); break;
+    case 'use-sugg': $('#f_budget').value = d.v; $('#f_budget').dispatchEvent(new Event('input', {bubbles: true})); break;
+    case 'toggle-act': {
+      const t = tripById(d.t), a = t && t.acts.find(x => x.id === d.a);
+      if (a) { a.done = el.checked; save(); rerender(); }
+      break;
+    }
+    case 'del-act': {
+      const t = tripById(d.t); if (!t) break;
+      t.acts = t.acts.filter(x => x.id !== d.a); save(); rerender(); toast('Activity removed'); break;
+    }
+    case 'open-act': openActivityDialog(d.id); break;
+    case 'close-act': $('#actDlg').close(); break;
+    case 'del-trip': case 'del-trip-detail': {
+      e.stopPropagation();
+      const t = tripById(d.id); if (!t) break;
+      if (await askConfirm('Delete trip?', `"${t.title}" and its itinerary will be removed.`)) {
+        S.trips = S.trips.filter(x => x.id !== d.id); save();
+        toast('Trip deleted');
+        if (act === 'del-trip-detail') go('#/trips'); else rerender();
+      }
+      break;
+    }
+    case 'reset':
+      if (await askConfirm('Reset all data?', 'This removes your trips, favourites and settings from this browser.', 'Reset')) {
+        S = seed(); save(); applyTheme(); toast('Data reset'); rerender();
+      }
+      break;
+    case 'confirm-yes': closeConfirm(true); break;
+    case 'confirm-no': closeConfirm(false); break;
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches('[role="link"][data-action="go"]')) go(e.target.dataset.href);
+});
+
+/* search box + estimator slider (input events) */
+document.addEventListener('input', e => {
+  if (e.target.id === 'q') { UI.query = e.target.value; $('#grid').innerHTML = gridHTML(filtered()); }
+  if (e.target.id === 'estDays') { UI.estDays = Number(e.target.value); updateEstimator(); }
+});
+function updateEstimator() {
+  const d = dest(currentRoute().parts[1]); if (!d) return;
+  $('#estDaysLbl').textContent = UI.estDays + (UI.estDays === 1 ? ' day' : ' days');
+  $('#estPeople').textContent = UI.estPeople;
+  $('#estTotal').textContent = money(d.price * UI.estDays * UI.estPeople);
+}
+
+/* ---------- start ---------- */
+if (!location.hash) history.replaceState(null, '', '#/');
+render();
+setTimeout(() => $('#splash').classList.add('hide'), 1900);
+</script>
+</body>
+</html>
